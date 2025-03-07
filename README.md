@@ -1,1 +1,4 @@
-# Detecting-Stellar-Flares
+# Detecting Stellar Flares
+
+This project aims to detect stellar flares, and score the performance of the model to identify these events. Stellar flares are intense bursts of energy, emitted from a star that are thought to be caused by magnetic reconnection. They are usually indicated by a sudden increase in brightness, followed by a slower decay. Detecting and analyzing these flares is crucial for understanding stellar behaviour and its potential effects on its environments.
+The dataset contains time series measurements of stellar brightness and associated errors from three stars (TIC 0131799991, TIC 031381302, and TIC 129646813) from the Transiting Exoplanet Survey Satellite (TESS). The key variables include: time, the observation timestamp in days (Barycentric Julian Date). PDCSAP_FLUX, the photometric flux after pre-search data conditioning, indicating the star's observed brightness (electrons per second). PDCSAP_FLUX_ERR, the error associated with each flux measurement (electrons per second).

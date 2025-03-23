@@ -3,9 +3,17 @@
 # It also visualizes the actual and simulated light curves, highlighting the 
 # synthetic flares.
 
+# @params starData: A data frame containing the time series data of a star, 
+# including flux values (with missing values imputed).
+# @params starName: A string representing the name of the star (used in the plot title).
+# @returns A data frame containing the simulated light curve with injected 
+# synthetic flares, including the time, simulated flux, and flare labels.
+
 # Load required libraries
 library(forecast)
 library(ggplot2)
+library(imputeTS)
+library(tidyverse)
 
 set.seed(12345)
 
@@ -62,6 +70,20 @@ simulateLightCurve <- function(starData, starName) {
 }
 
 # Simulate light curves for all stars and visualize actual vs. simulated data
+png("simS1.png", width = 800, height = 600, res = 150)
 simulatedS1 <- simulateLightCurve(s1, "Star 1")
+dev.off()
+
+png("simS2.png", width = 800, height = 600, res = 150)
 simulatedS2 <- simulateLightCurve(s2, "Star 2")
+dev.off()
+
+png("simS3.png", width = 800, height = 600, res = 150)
 simulatedS3 <- simulateLightCurve(s3, "Star 3")
+dev.off()
+
+
+
+
+
+

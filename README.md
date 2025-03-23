@@ -1,4 +1,43 @@
 # Detecting Stellar Flares
 
-This project aims to detect stellar flares, and score the performance of the model to identify these events. Stellar flares are intense bursts of energy, emitted from a star that are thought to be caused by magnetic reconnection. They are usually indicated by a sudden increase in brightness, followed by a slower decay. Detecting and analyzing these flares is crucial for understanding stellar behaviour and its potential effects on its environments.
-The dataset contains time series measurements of stellar brightness and associated errors from three stars (TIC 0131799991, TIC 031381302, and TIC 129646813) from the Transiting Exoplanet Survey Satellite (TESS). The key variables include: time, the observation timestamp in days (Barycentric Julian Date). PDCSAP_FLUX, the photometric flux after pre-search data conditioning, indicating the star's observed brightness (electrons per second). PDCSAP_FLUX_ERR, the error associated with each flux measurement (electrons per second).
+This project focuses on the detection and analysis of stellar flares using time-series data from the Transiting Exoplanet Survey Satellite (TESS). Stellar flares are intense bursts of energy resulting from magnetic reconnection, indicated by a sudden increase in brightness followed by a gradual decay. Understanding these flares is essential for insights into stellar behavior and their potential impacts on surrounding environments.
+
+## Project Overview
+
+The primary objective of this project is to develop and evaluate models to accurately detect stellar flares in photometric data.
+
+## Data Description
+
+The dataset comprises time-series measurements of stellar brightness and associated errors for three stars:
+
+- **TIC 0131799991**
+- **TIC 031381302**
+- **TIC 129646813**
+
+Each dataset includes the following key variables:
+
+- `time`: Observation timestamp in days (Barycentric Julian Date).
+- `PDCSAP_FLUX`: Pre-search Data Conditioning Simple Aperture Photometry flux values, representing the star's brightness.
+- `PDCSAP_FLUX_ERR`: Associated errors with the `PDCSAP_FLUX` measurements.
+
+## Methodology
+
+The approach to detecting stellar flares involves these key steps:
+
+1. **Exploratory Data Analysis (EDA)**: Understanding the characteristics of the light curves and identifying patterns indicative of flares.
+2. **Simulations**: Generating synthetic flares to mimic the brightness and improve/score our models.
+3. **Model Development**: Implementing detection algorithms and machine learning methods such as Gaussian Process Regression, Poisson Process Regression, and One-Class Support Vector Machines.
+4. **Model Evaluation**: Assessing model performance using metrics such as precision and sensitivity to score flare detection.
+
+## Repository Structure
+
+The repository is organized as follows:
+
+- `Data/`: Contains the raw datasets used for analysis, and model data
+- `EDA/`: Notebooks and scripts related to exploratory data analysis.
+- `Simulations/`: Code for generating synthetic flare events.
+- `Methods/`: Implementation of detection algorithms and models.
+- `Model_Evaluation/`: Scripts and results for the evaluation of model performance.
+- `Proposal.pdf`: Initial project proposal outlining objectives and methods.
+- `Progress1_Report.pdf`: First progress report including preliminary findings and next steps.
+- `STA2453_Detecting_Stellar_Flares.Rproj`: R project file for integrating with RStudio.

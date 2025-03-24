@@ -22,9 +22,10 @@ library(imputeTS)
 library(forecast)
 
 # Read in data
-s1 <- read_csv("031381302.csv")
-s2 <- read_csv("129646813.csv")
-s3 <- read_csv("0131799991.csv")
+s1 <- read_csv("Data/031381302.csv")
+s2 <- read_csv("Data/129646813.csv")
+s3 <- read_csv("Data/0131799991.csv")
+
 s1$star_id <- "TIC 031381302"
 s2$star_id <- "TIC 129646813"
 s3$star_id <- "TIC 0131799991"

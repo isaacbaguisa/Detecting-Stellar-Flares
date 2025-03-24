@@ -8,9 +8,9 @@ library(tidyverse)
 library(glmnet)
 
 # Read in data
-s1 <- read_csv("031381302.csv")
-s2 <- read_csv("129646813.csv")
-s3 <- read_csv("0131799991.csv")
+s1 <- read_csv("Data/031381302.csv")
+s2 <- read_csv("Data/129646813.csv")
+s3 <- read_csv("Data/0131799991.csv")
 
 # Impute missing flux values using Kalman filter
 s1$pdcsap_flux_imputed <- na_kalman(s1$pdcsap_flux, model = "StructTS")

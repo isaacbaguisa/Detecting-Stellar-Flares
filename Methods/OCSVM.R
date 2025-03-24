@@ -8,9 +8,9 @@ library(tidyverse)
 library(e1071)
 
 # Read in data
-s1 <- read_csv("031381302.csv")
-s2 <- read_csv("129646813.csv")
-s3 <- read_csv("0131799991.csv")
+s1 <- read_csv("Data/031381302.csv")
+s2 <- read_csv("Data/129646813.csv")
+s3 <- read_csv("Data/0131799991.csv")
 
 # Impute missing flux values using Kalman filter
 s1$pdcsap_flux_imputed <- na_kalman(s1$pdcsap_flux, model = "StructTS")
@@ -18,7 +18,7 @@ s2$pdcsap_flux_imputed <- na_kalman(s2$pdcsap_flux, model = "StructTS")
 s3$pdcsap_flux_imputed <- na_kalman(s3$pdcsap_flux, model = "StructTS")
 
 # Fit the One-Class SVM model with decision function enabled
-ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
+ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.3,
                   kernel = "radial", scale = TRUE, 
                   gamma = 0.05, decision.values = TRUE)
 
@@ -26,9 +26,7 @@ ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.01
 decisionScores <- ocsvmModel$decision.values
 
 # Define a manual threshold for anomalies
-threshold <- -20
-# Set threshold as the 95th percentile of decision scores (adjust as needed)
-#threshold <- quantile(decisionScores, 0.80) 
+threshold <- -2000
 
 # Flag anomalies based on the threshold
 s1$ocsvm_anomalies <- ifelse(decisionScores < threshold, "Anomaly", "Normal")
@@ -44,4 +42,3 @@ ggplot(plotData, aes(x = time, y = flux)) +
   scale_color_manual(values = c("Normal" = "black", "Anomaly" = "red")) +
   labs(title = "One-Class SVM Anomalies with Manual Threshold", 
        x = "Time", y = "PDCSAP Flux")
-

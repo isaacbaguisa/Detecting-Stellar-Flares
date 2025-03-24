@@ -8,9 +8,9 @@ library(tidyverse)
 library(e1071)
 
 # Read in data
-s1 <- read_csv("031381302.csv")
-s2 <- read_csv("129646813.csv")
-s3 <- read_csv("0131799991.csv")
+s1 <- read_csv("Data/031381302.csv")
+s2 <- read_csv("Data/129646813.csv")
+s3 <- read_csv("Data/0131799991.csv")
 
 # Impute missing flux values using Kalman filter
 s1$pdcsap_flux_imputed <- na_kalman(s1$pdcsap_flux, model = "StructTS")
@@ -21,10 +21,8 @@ s3$pdcsap_flux_imputed <- na_kalman(s3$pdcsap_flux, model = "StructTS")
 
 
 # Scoring GPR on Star 1
-# Predict using the trained GPR model on the simulated data for Star 3
-load("gprModel.RData")
-gprModel <- gpr_model
 
+# Predict using the trained GPR model on the simulated data for Star 3
 gprPred <- predict(gprModel, newdata = data.frame(time = simulatedS1$time))
 
 # Calculate residuals (difference between observed and predicted flux)
@@ -72,9 +70,6 @@ which(simulatedS1$flare_label & simulatedS1$predicted_flare_gpr == 1)
 
 # Scoring GPR Trained on Star 1, on Star 3
 # Predict using the trained GPR model on the simulated data for Star 3
-load("gprModel.RData")
-gprModel <- gpr_model
-
 gprPred <- predict(gprModel, newdata = data.frame(time = simulatedS3$time))
 
 # Calculate residuals (difference between observed and predicted flux)
@@ -121,10 +116,6 @@ which(simulatedS3$flare_label & simulatedS3$predicted_flare_gpr == 1)
 
 #########################PPR######################################
 
-
-# Scoring PPR Trained on Star 1, on Star 3
-pprModel <- glm(pdcsap_flux_imputed ~ time, 
-                family = poisson(link = "log"), data = s1)
 
 # Predict using the trained PPR model on the simulated data for Star 3
 pprPred <- predict(pprModel, newdata = data.frame(time = simulatedS3$time))
@@ -228,45 +219,3 @@ which(simulatedS1$predicted_flare_ocsvm==1)
 
 which(simulatedS1$flare_label & simulatedS1$predicted_flare_ocsvm == 1)
 
-#####################################################################
-#Finding optimal nu and gamma parameters
-
-# Define possible values for nu and gamma
-nu_values <- seq(0.05, 0.5, by = 0.05)  # Range of nu values
-gamma_values <- c(0.01, 0.05, 0.1, 0.5)  # Range of gamma values
-
-# Initialize a data frame to store results
-results <- data.frame(nu = numeric(), gamma = numeric(), accuracy = numeric())
-
-# Loop through each combination of nu and gamma
-for (nu in nu_values) {
-  for (gamma in gamma_values) {
-    
-    # Train the OCSVM model
-    ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", 
-                      nu = nu, kernel = "radial", scale = TRUE, gamma = gamma, 
-                      decision.values = TRUE)
-    
-    # Get the decision function scores
-    decisionScores <- ocsvmModel$decision.values
-    
-    # Set threshold based on quantiles or another method
-    threshold <- quantile(decisionScores, 0.90)
-    #threshold <- -1000
-    
-    # Predict anomalies based on the threshold
-    predicted_flare_ocsvm <- ifelse(decisionScores < threshold, 1, 0)
-    
-    # Calculate accuracy (or other metrics)
-    accuracy <- mean(predicted_flare_ocsvm == simulatedS1$flare_label)
-    
-    # Store the results
-    results <- rbind(results, data.frame(nu = nu, gamma = gamma, accuracy = accuracy))
-  }
-}
-
-# View results to identify best parameters
-best_params <- results[which.max(results$accuracy), ]
-cat("Best parameters: nu =", best_params$nu, "gamma =", best_params$gamma, "\n")
-cat("Best accuracy: ", best_params$accuracy, "\n")
-#Best parameters: nu = 0.05 gamma = 0.01 

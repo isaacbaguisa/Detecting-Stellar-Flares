@@ -34,7 +34,7 @@ The approach to detecting stellar flares involves these key steps:
 The repository is organized as follows:
 
 - `Data/`: Contains the datasets used for analysis, and model data
-- `EDA/`: Notebook and report related to exploratory data analysis.
+- `EDA/`: Script and report related to exploratory data analysis.
 - `Simulations/`: Code for generating synthetic flare events.
 - `Methods/`: Implementation of detection algorithms and models.
 - `Model_Evaluation/`: Scripts and results for the evaluation of model performance.

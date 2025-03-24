@@ -18,7 +18,7 @@ s2$pdcsap_flux_imputed <- na_kalman(s2$pdcsap_flux, model = "StructTS")
 s3$pdcsap_flux_imputed <- na_kalman(s3$pdcsap_flux, model = "StructTS")
 
 # Fit the One-Class SVM model with decision function enabled
-ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.3,
+ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
                   kernel = "radial", scale = TRUE, 
                   gamma = 0.05, decision.values = TRUE)
 

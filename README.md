@@ -39,5 +39,5 @@ The repository is organized as follows:
 - `Methods/`: Implementation of detection algorithms and models.
 - `Model_Evaluation/`: Scripts and results for the evaluation of model performance.
 - `Proposal.pdf`: Initial project proposal outlining objectives and methods.
-- `Progress1_Report.pdf`: First progress report including preliminary findings and next steps.
+- `Progress_Report.pdf`: First progress report including preliminary findings and next steps.
 - `STA2453_Detecting_Stellar_Flares.Rproj`: R project file for integrating with RStudio.

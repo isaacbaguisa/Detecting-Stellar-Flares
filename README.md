@@ -1,14 +1,14 @@
 # Detecting Stellar Flares
 
-This project focuses on the detection and analysis of stellar flares using time-series data from the Transiting Exoplanet Survey Satellite (TESS). Stellar flares are intense bursts of energy resulting from magnetic reconnection, indicated by a sudden increase in brightness followed by a gradual decay. Understanding these flares is essential for insights into stellar behavior and their potential impacts on surrounding environments.
+This project focuses on the detection and analysis of stellar flares using time-series data from NASA's Transiting Exoplanet Survey Satellite (TESS). Stellar flares are intense bursts of energy resulting from magnetic reconnection, indicated by a sudden increase in brightness followed by a gradual decay. Understanding these flares is essential for insights into stellar behavior and their potential impacts on surrounding environments.
 
 ## Project Overview
 
 The primary objective of this project is to develop and evaluate models to accurately detect stellar flares in photometric data.
 
-## Data Description
+## Data
 
-The dataset comprises time-series measurements of stellar brightness and associated errors for three stars:
+The dataset consists of time-series measurements of stellar brightness and associated errors for three stars:
 
 - **TIC 0131799991**
 - **TIC 031381302**
@@ -20,12 +20,12 @@ Each dataset includes the following key variables:
 - `PDCSAP_FLUX`: Pre-search Data Conditioning Simple Aperture Photometry flux values, representing the star's brightness.
 - `PDCSAP_FLUX_ERR`: Associated errors with the `PDCSAP_FLUX` measurements.
 
-## Methodology
+## Methods
 
 The approach to detecting stellar flares involves these key steps:
 
 1. **Exploratory Data Analysis (EDA)**: Understanding the characteristics of the light curves and identifying patterns indicative of flares.
-2. **Simulations**: Generating synthetic flares to mimic the brightness and improve/score our models.
+2. **Simulations**: Generating synthetic flares to mimic the brightness and improve/score the models.
 3. **Model Development**: Implementing detection algorithms and machine learning methods such as Gaussian Process Regression, Poisson Process Regression, and One-Class Support Vector Machines.
 4. **Model Evaluation**: Assessing model performance using metrics such as precision and sensitivity to score flare detection.
 
@@ -40,4 +40,4 @@ The repository is organized as follows:
 - `Model_Evaluation/`: Scripts and results for the evaluation of model performance.
 - `Proposal.pdf`: Initial project proposal outlining objectives and methods.
 - `Progress_Report.pdf`: First progress report including preliminary findings and next steps.
-- `STA2453_Detecting_Stellar_Flares.Rproj`: R project file for integrating with RStudio.
+- `STA2453_Detecting_Stellar_Flares.Rproj`: R project file.

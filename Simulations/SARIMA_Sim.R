@@ -3,10 +3,10 @@
 # It also visualizes the actual and simulated light curves, highlighting the 
 # synthetic flares.
 
-# @params starData: A data frame containing the time series data of a star, 
+# @param starData: A data frame containing the time series data of a star, 
 # including flux values (with missing values imputed).
-# @params starName: A string representing the name of the star (used in the plot title).
-# @returns A data frame containing the simulated light curve with injected 
+# @param starName: A string representing the name of the star (used in the plot title).
+# @return A data frame containing the simulated light curve with injected 
 # synthetic flares, including the time, simulated flux, and flare labels.
 
 # Load required libraries

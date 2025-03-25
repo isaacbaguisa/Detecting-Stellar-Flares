@@ -3,10 +3,10 @@
 # It also visualizes the actual and simulated light curves, highlighting the 
 # synthetic flares injected following a Pareto distribution 
 
-# @params starData: A data frame containing the time series data of a star, 
+# @param starData: A data frame containing the time series data of a star, 
 # including flux values (with missing values imputed).
-# @params starName: A string representing the name of the star (used in the plot title).
-# @returns A data frame containing the simulated light curve with injected 
+# @param starName: A string representing the name of the star (used in the plot title).
+# @return A data frame containing the simulated light curve with injected 
 # synthetic flares, including the time, simulated flux, and flare labels.
 
 # Load required libraries
@@ -19,9 +19,9 @@ library(extraDistr)
 set.seed(12345)
 
 # Read in data
-s1 <- read_csv("031381302.csv")
-s2 <- read_csv("129646813.csv")
-s3 <- read_csv("0131799991.csv")
+s1 <- read_csv("Data/031381302.csv")
+s2 <- read_csv("Data/129646813.csv")
+s3 <- read_csv("Data/0131799991.csv")
 
 # Impute missing flux values using Kalman filter
 s1$pdcsap_flux_imputed <- na_kalman(s1$pdcsap_flux, model = "StructTS")
@@ -83,17 +83,17 @@ simulatedS3 <- simulate_light_curve_pareto(s3, "Star 3")
 
 
 # Simulate light curves for all stars and visualize actual vs. simulated data
-png("simS1Pareto.png", width = 800, height = 600, res = 150)
-simulatedS1 <- simulate_light_curve_pareto(s1, "Star 1")
-dev.off()
+#png("simS1Pareto.png", width = 800, height = 600, res = 150)
+#simulatedS1 <- simulate_light_curve_pareto(s1, "Star 1")
+#dev.off()
 
-png("simS2Pareto.png", width = 800, height = 600, res = 150)
-simulatedS2 <- simulate_light_curve_pareto(s2, "Star 2")
-dev.off()
+#png("simS2Pareto.png", width = 800, height = 600, res = 150)
+#simulatedS2 <- simulate_light_curve_pareto(s2, "Star 2")
+#dev.off()
 
-png("simS3Pareto.png", width = 800, height = 600, res = 150)
-simulatedS3 <- simulate_light_curve_pareto(s3, "Star 3")
-dev.off()
+#png("simS3Pareto.png", width = 800, height = 600, res = 150)
+#simulatedS3 <- simulate_light_curve_pareto(s3, "Star 3")
+#dev.off()
 
 
 

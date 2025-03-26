@@ -16,7 +16,6 @@ library(imputeTS)
 library(tidyverse)
 library(extraDistr)
 
-set.seed(12345)
 
 # Read in data
 s1 <- read_csv("Data/031381302.csv")
@@ -51,7 +50,7 @@ simulate_light_curve_pareto <- function(star_data, star_name) {
   
   for (index in flare_indices) {
     # Use the Pareto distribution to determine flare amplitude
-    flare_amplitude <- rpareto(1, a = 1, b = 50)  # Using parameters for large flares
+    flare_amplitude <- rpareto(1, a = 1, b = 25)  # Using parameters for large flares
     simulated_df$pdcsap_flux_imputed[index] <- simulated_df$pdcsap_flux_imputed[index] + 
       flare_amplitude
     simulated_df$flare_label[index] <- 1  # Mark flare
@@ -77,6 +76,7 @@ simulate_light_curve_pareto <- function(star_data, star_name) {
 }
 
 # Simulate light curves for all stars and visualize actual vs. simulated data
+set.seed(2453)
 simulatedS1 <- simulate_light_curve_pareto(s1, "Star 1")
 simulatedS2 <- simulate_light_curve_pareto(s2, "Star 2")
 simulatedS3 <- simulate_light_curve_pareto(s3, "Star 3")

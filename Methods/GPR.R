@@ -35,15 +35,14 @@ gprResiduals <- s1$pdcsap_flux_imputed - gprPred
 threshold <- mean(gprResiduals, na.rm = TRUE) + 3 * sd(gprResiduals, na.rm = TRUE)
 
 # Flag anomalies based on the residuals
-s1$gpr_anomalies <- ifelse(gprResiduals > threshold, "Anomaly", "Normal")
+s1$gpr_anomalies <- ifelse(gprResiduals > threshold, "Flare", "Normal")
 
 # Create a data frame for plotting
-plotData <- data.frame(time = s1$time, flux = s1$pdcsap_flux_imputed, 
-                       anomalies = s1$gpr_anomalies)
+plotData <- data.frame(time = s1$time, flux = s1$pdcsap_flux_imputed, flare = s1$gpr_anomalies)
 
 # Visualize anomalies detected by GPR
 ggplot(plotData, aes(x = time, y = flux)) +
-  geom_point(aes(color = anomalies), size = 1) +
-  scale_color_manual(values = c("Normal" = "black", "Anomaly" = "blue")) +
+  geom_point(aes(color = flare), size = 1) +
+  scale_color_manual(values = c("Normal" = "black", "Flare" = "red")) +
   labs(title = "Gaussian Process Regression Anomalies",
        x = "Time", y = "PDCSAP Flux")

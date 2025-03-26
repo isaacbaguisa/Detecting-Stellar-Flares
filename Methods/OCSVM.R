@@ -20,25 +20,28 @@ s3$pdcsap_flux_imputed <- na_kalman(s3$pdcsap_flux, model = "StructTS")
 # Fit the One-Class SVM model with decision function enabled
 ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
                   kernel = "radial", scale = TRUE, 
-                  gamma = 0.05, decision.values = TRUE)
+                  gamma = 0.01, decision.values = TRUE)
+
 
 # Get the decision function scores (distance from the boundary)
 decisionScores <- ocsvmModel$decision.values
 
 # Define a manual threshold for anomalies
-threshold <- -2000
+threshold <- -quantile(decisionScores, 0.95) 
 
 # Flag anomalies based on the threshold
-s1$ocsvm_anomalies <- ifelse(decisionScores < threshold, "Anomaly", "Normal")
+s1$ocsvm_anomalies <- ifelse(decisionScores < threshold, "Flare", "Normal")
 
 # Create a data frame for plotting
 plotData <- data.frame(time = s1$time, flux = s1$pdcsap_flux_imputed, 
-                       anomalies = s1$ocsvm_anomalies)
-colnames(plotData) <- c("time", "flux", "anomalies")
+                       flare = s1$ocsvm_anomalies)
+colnames(plotData) <- c("time", "flux", "flare")
 
-# Visualize anomalies detected by OCSVM with manual threshold using ggplot2
+# Visualize anomalies detected by OCSVM with manual threshold
 ggplot(plotData, aes(x = time, y = flux)) +
-  geom_point(aes(color = anomalies), size = 1) +
-  scale_color_manual(values = c("Normal" = "black", "Anomaly" = "red")) +
-  labs(title = "One-Class SVM Anomalies with Manual Threshold", 
-       x = "Time", y = "PDCSAP Flux")
+  geom_point(aes(color = flare), size = 1) +
+  scale_color_manual(values = c("Normal" = "black", "Flare" = "red")) +
+  labs(title = "One-Class SVM Anomalies", 
+       x = "Time", y = "PDCSAP Flux") 
+
+

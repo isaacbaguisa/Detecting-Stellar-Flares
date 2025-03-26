@@ -10,9 +10,9 @@ The primary objective of this project is to develop and evaluate models to accur
 
 The dataset consists of time-series measurements of stellar brightness and associated errors for three stars:
 
-- **TIC 0131799991**
-- **TIC 031381302**
-- **TIC 129646813**
+- **TIC 031381302 (Star 1)**
+- **TIC 129646813 (Star 2)**
+- **TIC 0131799991 (Star 3)**
 
 Each dataset includes the following key variables:
 

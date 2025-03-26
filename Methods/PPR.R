@@ -32,15 +32,15 @@ threshold <- mean(pprResiduals, na.rm = TRUE) + 3 * sd(pprResiduals,
                                                        na.rm = TRUE)
 
 # Flag anomalies based on the residuals
-s1$ppr_anomalies <- ifelse(pprResiduals > threshold, "Anomaly", "Normal")
+s1$ppr_anomalies <- ifelse(pprResiduals > threshold, "Flare", "Normal")
 
 # Create a data frame for plotting
 plotData <- data.frame(time = s1$time, flux = s1$pdcsap_flux_imputed, 
-                       anomalies = s1$ppr_anomalies)
+                       flare = s1$ppr_anomalies)
 
 # Visualize anomalies detected by PPR using ggplot2
 ggplot(plotData, aes(x = time, y = flux)) +
   geom_point(aes(color = anomalies), size = 1) +
-  scale_color_manual(values = c("Normal" = "black", "Anomaly" = "red")) +
+  scale_color_manual(values = c("Normal" = "black", "Flare" = "red")) +
   labs(title = "Poisson Process Regression Anomalies", 
        x = "Time", y = "PDCSAP Flux")

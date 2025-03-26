@@ -40,7 +40,7 @@ plotData <- data.frame(time = s1$time, flux = s1$pdcsap_flux_imputed,
 
 # Visualize anomalies detected by PPR using ggplot2
 ggplot(plotData, aes(x = time, y = flux)) +
-  geom_point(aes(color = anomalies), size = 1) +
+  geom_point(aes(color = flare), size = 1) +
   scale_color_manual(values = c("Normal" = "black", "Flare" = "red")) +
   labs(title = "Poisson Process Regression Anomalies", 
        x = "Time", y = "PDCSAP Flux")

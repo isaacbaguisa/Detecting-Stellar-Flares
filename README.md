@@ -35,9 +35,8 @@ The repository is organized as follows:
 
 - `Data/`: Contains the datasets used for analysis, and model data
 - `EDA/`: Script and report related to exploratory data analysis.
-- `Simulations/`: Code for generating synthetic flare events.
 - `Methods/`: Implementation of detection algorithms and models.
 - `Model_Evaluation/`: Scripts and results for the evaluation of model performance.
-- `Proposal.pdf`: Initial project proposal outlining objectives and methods.
-- `Progress_Report.pdf`: First progress report including preliminary findings and next steps.
+- `Reports/`: Proposal, progress, and final reports outlining project steps.
+- `Simulations/`: Code for generating synthetic flare events.
 - `STA2453_Detecting_Stellar_Flares.Rproj`: R project file.

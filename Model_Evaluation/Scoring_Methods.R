@@ -1,7 +1,7 @@
 # This script scores detection methods (GPR, PPR, and OCSVM) 
 # based on detection rate, sensitivity (true positive rate), 
 # and predictive accuracy for detecting flares in the simulated light curves 
-# of Star 3
+# of Star 1
 
 # Load required libraries
 library(tidyverse)
@@ -17,8 +17,13 @@ s1$pdcsap_flux_imputed <- na_kalman(s1$pdcsap_flux, model = "StructTS")
 s2$pdcsap_flux_imputed <- na_kalman(s2$pdcsap_flux, model = "StructTS")
 s3$pdcsap_flux_imputed <- na_kalman(s3$pdcsap_flux, model = "StructTS")
 
-#########################GPR######################################
+# Baseline (Always predicting no flares)
+simulatedS1$baseline_prediction <- 0
+baselineAccuracy <- mean(simulatedS1$baseline_prediction == simulatedS1$flare_label)
+cat("Baseline Accuracy: ", baselineAccuracy, "\n")
 
+
+######################### GPR ######################################
 
 # Scoring GPR on Star 1
 
@@ -36,37 +41,30 @@ thresholdGpr <- mean(gprResiduals, na.rm = TRUE) + 3 * sd(gprResiduals,
 simulatedS1$predicted_flare_gpr <- ifelse(gprResiduals > thresholdGpr, 1, 0)  
 # 1 for flare, 0 for normal
 
-# Calculate Detection Rate for GPR
-detectionRateGpr <- mean(simulatedS1$predicted_flare_gpr == 1 & 
-                           simulatedS1$flare_label == 1)
-
 # Calculate Sensitivity (True Positive Rate) for GPR
+predictedFlaresGpr <- sum(simulatedS1$predicted_flare_gpr==1)
 truePositivesGpr <- sum(simulatedS1$predicted_flare_gpr == 1 & 
                           simulatedS1$flare_label == 1)
 falseNegativesGpr <- sum(simulatedS1$predicted_flare_gpr == 0 & 
                            simulatedS1$flare_label == 1)
 falsePositivesGpr <- sum(simulatedS1$predicted_flare_gpr == 1 & 
                            simulatedS1$flare_label == 0)
+trueNegativesGpr <- sum(simulatedS1$predicted_flare_gpr == 0 & 
+                          simulatedS1$flare_label == 0)
 
+falsePostiveRateGpr <- falsePositivesGpr / (falsePositivesGpr + trueNegativesGpr)
 sensitivityGpr <- truePositivesGpr / (truePositivesGpr + falseNegativesGpr)
 
 # Calculate Predictive Accuracy for GPR
 accuracyGpr <- mean(simulatedS1$predicted_flare_gpr == simulatedS1$flare_label)
 
 # Print the results
-cat("GPR Detection Rate: ", detectionRateGpr, "\n")
+cat("GPR Flares Predicted:", predictedFlaresGpr, "\n")
 cat("GPR Sensitivity (True Positive Rate): ", sensitivityGpr, "\n")
+cat("GPR False Positive Rate: ", falsePostiveRateGpr, "\n")
 cat("GPR Predictive Accuracy: ", accuracyGpr, "\n")
 
-
-sum(simulatedS1$flare_label==1)
-sum(simulatedS1$predicted_flare_gpr==1)
-
-which(simulatedS1$flare_label==1)
-which(simulatedS1$predicted_flare_gpr==1)
-
-which(simulatedS1$flare_label & simulatedS1$predicted_flare_gpr == 1)
-
+#which(simulatedS1$flare_label==1 & simulatedS1$predicted_flare_gpr==0)
 
 # Scoring GPR Trained on Star 1, on Star 3
 # Predict using the trained GPR model on the simulated data for Star 3
@@ -83,17 +81,19 @@ thresholdGpr <- mean(gprResiduals, na.rm = TRUE) + 3 * sd(gprResiduals,
 simulatedS3$predicted_flare_gpr <- ifelse(gprResiduals > thresholdGpr, 1, 0)  
 # 1 for flare, 0 for normal
 
-# Calculate Detection Rate for GPR
-detectionRateGpr <- mean(simulatedS3$predicted_flare_gpr == 1 & 
-                           simulatedS3$flare_label == 1)
-
 # Calculate Sensitivity (True Positive Rate) for GPR
+predictedFlaresGpr <- sum(simulatedS3$predicted_flare_gpr==1)
 truePositivesGpr <- sum(simulatedS3$predicted_flare_gpr == 1 & 
                           simulatedS3$flare_label == 1)
 falseNegativesGpr <- sum(simulatedS3$predicted_flare_gpr == 0 & 
                            simulatedS3$flare_label == 1)
 falsePositivesGpr <- sum(simulatedS3$predicted_flare_gpr == 1 & 
                            simulatedS3$flare_label == 0)
+trueNegativesGpr <- sum(simulatedS3$predicted_flare_gpr == 0 & 
+                         simulatedS3$flare_label == 0)
+
+# Calculate False Positive Rate (FPR)
+falsePostiveRateGpr <- falsePositivesGpr / (falsePositivesGpr + trueNegativesGpr)
 
 sensitivityGpr <- truePositivesGpr / (truePositivesGpr + falseNegativesGpr)
 
@@ -101,21 +101,14 @@ sensitivityGpr <- truePositivesGpr / (truePositivesGpr + falseNegativesGpr)
 accuracyGpr <- mean(simulatedS3$predicted_flare_gpr == simulatedS3$flare_label)
 
 # Print the results
-cat("GPR Detection Rate: ", detectionRateGpr, "\n")
+cat("GPR Flares Predicted:", predictedFlaresGpr, "\n")
 cat("GPR Sensitivity (True Positive Rate): ", sensitivityGpr, "\n")
+cat("GPR False Positive Rate: ", falsePostiveRateGpr, "\n")
 cat("GPR Predictive Accuracy: ", accuracyGpr, "\n")
 
+which(simulatedS3$flare_label==1 & simulatedS3$predicted_flare_gpr==0)
 
-sum(simulatedS3$flare_label==1)
-sum(simulatedS3$predicted_flare_gpr==1)
-
-which(simulatedS3$flare_label==1)
-which(simulatedS3$predicted_flare_gpr==1)
-
-which(simulatedS3$flare_label & simulatedS3$predicted_flare_gpr == 1)
-
-#########################PPR######################################
-
+######################### PPR ######################################
 
 # Predict using the trained PPR model on the simulated data for Star 3
 pprPred <- predict(pprModel, newdata = data.frame(time = simulatedS3$time))
@@ -131,10 +124,6 @@ thresholdPpr <- mean(pprResiduals, na.rm = TRUE) + 3 * sd(pprResiduals,
 simulatedS3$predicted_flare_ppr <- ifelse(pprResiduals > thresholdPpr, 1, 0)  
 # 1 for flare, 0 for normal
 
-# Calculate Detection Rate for PPR
-detectionRatePpr <- mean(simulatedS3$predicted_flare_ppr == 1 & 
-                           simulatedS3$flare_label == 1)
-
 # Calculate Sensitivity (True Positive Rate) for PPR
 truePositivesPpr <- sum(simulatedS3$predicted_flare_ppr == 1 & 
                           simulatedS3$flare_label == 1)
@@ -149,51 +138,29 @@ sensitivityPpr <- truePositivesPpr / (truePositivesPpr + falseNegativesPpr)
 accuracyPpr <- mean(simulatedS3$predicted_flare_ppr == simulatedS3$flare_label)
 
 # Print the results
-cat("PPR Detection Rate: ", detectionRatePpr, "\n")
 cat("PPR Sensitivity (True Positive Rate): ", sensitivityPpr, "\n")
 cat("PPR Predictive Accuracy: ", accuracyPpr, "\n")
 
-sum(simulatedS3$flare_label==1)
-sum(simulatedS3$predicted_flare_ppr==1)
-
-which(simulatedS3$flare_label==1)
-which(simulatedS3$predicted_flare_ppr==1)
-
-which(simulatedS3$flare_label & simulatedS3$predicted_flare_ppr == 1)
-
-
-#########################OC SVM######################################
-
+######################### OC SVM ######################################
 # Scoring SVM on Star 1
-# Fit the One-Class SVM model with decision function enabled
 ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
-                  kernel = "radial", scale = TRUE, 
-                  gamma = 0.05, decision.values = TRUE)
+                  kernel = "radial", scale = TRUE, decision.values=TRUE,
+                  gamma = 0.01)
 
-# Predict using the trained OCSVM model on the simulated data for Star 3
-# The OCSVM model returns -1 for outliers (flares) and 1 for normal points
+# Predict using the trained OCSVM model on the simulated data for Star 1
 ocsvmPred <- predict(ocsvmModel, 
                      newdata = data.frame(simulatedS1$pdcsap_flux_imputed))
 
-decisionScores <- ocsvmModel$decision.values
-threshold <- quantile(decisionScores, 0.95) 
-#threshold <- -20
+simulatedS1$predicted_flare_ocsvm <- ifelse(ocsvmPred, 0, 1)
 
-# Flag anomalies based on the threshold
-simulatedS1$predicted_flare_ocsvm <- ifelse(decisionScores < threshold, 1, 0)  # 1 for flare, 0 for normal
+threshold <- quantile(simulatedS1$pdcsap_flux_imputed, 0.95)  
 
-# Print number of anomalies detected
-cat("Number of anomalies detected: ", sum(simulatedS1$predicted_flare_ocsvm == 1), "\n")
+simulatedS1$predicted_flare_ocsvm <- ifelse(simulatedS1$predicted_flare_ocsvm == 1 & 
+                                        simulatedS1$pdcsap_flux_imputed > threshold, 1, 0)
 
-# Create a column for the predicted flare labels based on OCSVM results
-#simulatedS1$predicted_flare_ocsvm <- ifelse(ocsvmPred == -1, 1, 0)  
-# 1 for flare, 0 for normal
-
-# Calculate Detection Rate (the fraction of actual flares detected as anomalies)
-detectionRateOcsvm <- mean(simulatedS1$predicted_flare_ocsvm == 1 & 
-                             simulatedS1$flare_label == 1)
 
 # Calculate Sensitivity (True Positive Rate) for OCSVM
+flaresPredictedOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 1)
 truePositivesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 1 & 
                             simulatedS1$flare_label == 1)
 falseNegativesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 0 & 
@@ -201,21 +168,89 @@ falseNegativesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 0 &
 falsePositivesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 1 & 
                              simulatedS1$flare_label == 0)
 sensitivityOcsvm <- truePositivesOcsvm / (truePositivesOcsvm + falseNegativesOcsvm)
+trueNegativesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 0 & 
+                          simulatedS1$flare_label == 0)
+
+falsePostiveRateOcsvm <- falsePositivesOcsvm / (falsePositivesOcsvm + trueNegativesOcsvm)
 
 # Calculate Predictive Accuracy for OCSVM
 accuracyOcsvm <- mean(simulatedS1$predicted_flare_ocsvm == simulatedS1$flare_label)
 
 # Print the results
-cat("OCSVM Detection Rate: ", detectionRateOcsvm, "\n")
+cat("OCSVM Flares Predicted:", flaresPredictedOcsvm, "\n")
 cat("OCSVM Sensitivity (True Positive Rate): ", sensitivityOcsvm, "\n")
+cat("OCSVM False Positive Rate: ", falsePostiveRateOcsvm, "\n")
 cat("OCSVM Predictive Accuracy: ", accuracyOcsvm, "\n")
 
 
-sum(simulatedS1$flare_label==1)
-sum(simulatedS1$predicted_flare_ocsvm==1)
+# Visualize flux over time with anomalies highlighted
+ggplot(simulatedS1, aes(x = time, y = pdcsap_flux_imputed)) +  # Replace 'time_column' with your actual time variable
+  geom_line(color = "black") +
+  geom_point(data = subset(simulatedS1, predicted_flare_ocsvm == 1),
+             aes(x = time, y = pdcsap_flux_imputed),
+             color = "red", size = 2) +
+  labs(title = "Anomaly Detection using One-Class SVM",
+       x = "Time", y = "Flux",
+       subtitle = "Red points indicate detected anomalies") +
+  theme_minimal()
 
-which(simulatedS1$flare_label==1)
-which(simulatedS1$predicted_flare_ocsvm==1)
 
-which(simulatedS1$flare_label & simulatedS1$predicted_flare_ocsvm == 1)
+#which(simulatedS1$flare_label==1 & simulatedS1$predicted_flare_ocsvm==0)
+#simulatedS1[12706,]
+
+# Scoring SVM on Star 3
+ocsvmModel <- svm(s3$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
+                 kernel = "radial", scale = TRUE, 
+                  gamma = 0.01, decision.values = TRUE)
+
+# Predict using the trained OCSVM model on the simulated data for Star 3
+ocsvmPred <- predict(ocsvmModel, 
+                     newdata = data.frame(simulatedS3$pdcsap_flux_imputed))
+
+simulatedS3$predicted_flare_ocsvm <- ifelse(ocsvmPred, 0, 1)
+
+threshold <- quantile(simulatedS3$pdcsap_flux_imputed, 0.95)  
+
+simulatedS3$predicted_flare_ocsvm <- ifelse(simulatedS3$predicted_flare_ocsvm == 1 & 
+                                              simulatedS3$pdcsap_flux_imputed > threshold, 1, 0)
+
+
+# Calculate Sensitivity (True Positive Rate) for OCSVM
+flaresPredictedOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 1)
+truePositivesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 1 & 
+                            simulatedS3$flare_label == 1)
+falseNegativesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 0 & 
+                             simulatedS3$flare_label == 1)
+falsePositivesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 1 & 
+                             simulatedS3$flare_label == 0)
+trueNegativesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 0 & 
+                            simulatedS3$flare_label == 0)
+
+falsePostiveRateOcsvm <- falsePositivesOcsvm / (falsePositivesOcsvm + trueNegativesOcsvm)
+sensitivityOcsvm <- truePositivesOcsvm / (truePositivesOcsvm + falseNegativesOcsvm)
+
+
+# Calculate Predictive Accuracy for OCSVM
+accuracyOcsvm <- mean(simulatedS3$predicted_flare_ocsvm == simulatedS3$flare_label)
+
+# Print the results
+cat("OCSVM Flares Predicted:", flaresPredictedOcsvm, "\n")
+cat("OCSVM Sensitivity (True Positive Rate): ", sensitivityOcsvm, "\n")
+cat("OCSVM False Positive Rate: ", falsePostiveRateOcsvm, "\n")
+cat("OCSVM Predictive Accuracy: ", accuracyOcsvm, "\n")
+
+which(simulatedS3$flare_label==1 & simulatedS3$predicted_flare_ocsvm==0)
+#simulatedS3[2688,]
+
+# Visualize flux over time with anomalies highlighted
+ggplot(simulatedS3, aes(x = time, y = pdcsap_flux_imputed)) + 
+  geom_line(color = "black") +
+  geom_point(data = subset(simulatedS3, predicted_flare_ocsvm == 1),
+             aes(x = time, y = pdcsap_flux_imputed),
+             color = "red", size = 2) +
+  labs(title = "Anomaly Detection using One-Class SVM",
+       x = "Time", y = "Flux",
+       subtitle = "Red points indicate detected anomalies") +
+  theme_minimal()
+
 

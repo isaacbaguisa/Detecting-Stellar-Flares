@@ -2,8 +2,8 @@
 # to optimize anomaly detection performance.
 
 # Define possible values for nu and gamma
-nu_values <- seq(0.01, 0.5, by = 0.05)  # Range of nu values
-gamma_values <- c(0.01, 0.05, 0.1, 0.5, 1)  # Range of gamma values
+nu_values <- seq(0.01, 0.5, by = 0.05)  
+gamma_values <- c(0.01, 0.05, 0.1, 0.5, 1)  
 
 # Initialize a data frame to store results
 results <- data.frame(nu = numeric(), gamma = numeric(), accuracy = numeric())
@@ -37,5 +37,4 @@ best_params <- results[which.max(results$accuracy), ]
 cat("Best parameters: nu =", best_params$nu, "gamma =", best_params$gamma, "\n")
 cat("Best accuracy: ", best_params$accuracy, "\n")
 
-#Best parameters: nu = 0.05 gamma = 0.01 
 

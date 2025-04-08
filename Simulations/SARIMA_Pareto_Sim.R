@@ -77,9 +77,9 @@ simulate_light_curve_pareto <- function(star_data, star_name) {
 
 # Simulate light curves for all stars and visualize actual vs. simulated data
 set.seed(2453)
-simulatedS1 <- simulate_light_curve_pareto(s1, "Star 1")
-simulatedS2 <- simulate_light_curve_pareto(s2, "Star 2")
-simulatedS3 <- simulate_light_curve_pareto(s3, "Star 3")
+simulatedS1 <- simulate_light_curve_pareto(s1, "TIC 031381302")
+simulatedS2 <- simulate_light_curve_pareto(s2, "TIC 129646813")
+simulatedS3 <- simulate_light_curve_pareto(s3, "TIC 0131799991")
 
 
 # Simulate light curves for all stars and visualize actual vs. simulated data

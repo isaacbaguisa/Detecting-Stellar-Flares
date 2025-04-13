@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
-This is a minimal reproducible example to replicate some parts of my analysis, and build the Gaussian Process Regression and One-Class Support Vector Machine models to detect stellar flares.
+This is a minimal reproducible example to replicate some parts of my analysis, and build the Gaussian Process Regression and One-Class Support Vector Machine models to detect stellar flares.  
 
 # Step 1: Read and Process Data
 

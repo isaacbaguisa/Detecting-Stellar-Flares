@@ -1,0 +1,369 @@
+---
+title: "Reproducible Example"
+author: "Isaac Baguisa"
+date: "2025-04-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+```
+
+This is a minimal reproducible example to replicate some parts of my analysis, and build the Gaussian Process Regression and One-Class Support Vector Machine models to detect stellar flares.
+
+# Step 1: Read and Process Data
+
+**Load required libraries**
+```{r}
+library(tidyverse)
+library(kernlab)
+library(e1071)
+library(forecast)
+library(ggplot2)
+library(imputeTS)
+library(extraDistr)
+```
+
+**Get data from GitHub**
+
+```{r}
+# Download data from GitHub as .zip file
+repo_url <- "https://github.com/isaacbaguisa/Detecting-Stellar-Flares"
+zip_url <- paste0(repo_url, "/archive/refs/heads/main.zip")
+zip_file <- "stellar-flares.zip"
+unzip_dir <- "stellar-flares"
+download.file(zip_url, destfile = zip_file, mode = "wb")
+
+# Unzip file
+if (!dir.exists(unzip_dir)) {
+  unzip(zip_file, exdir = ".")
+  unzipped_name <- list.files(pattern = "^Detecting-Stellar-Flares-(main|master)$")
+  file.rename(unzipped_name, unzip_dir)
+}
+```
+
+**Read and impute data**
+```{r}
+# Read in
+s1 <- read_csv("stellar-flares/Data/031381302.csv")
+s2 <- read_csv("stellar-flares/Data/129646813.csv")
+s3 <- read_csv("stellar-flares/Data/0131799991.csv")
+
+# Imputation
+s1$pdcsap_flux_imputed <- na_kalman(s1$pdcsap_flux, model = "StructTS")
+s2$pdcsap_flux_imputed <- na_kalman(s2$pdcsap_flux, model = "StructTS")
+s3$pdcsap_flux_imputed <- na_kalman(s3$pdcsap_flux, model = "StructTS")
+```
+
+# Step 2: Fit Gaussian Process Regression Model
+
+```{r}
+# Load GPR model directly because it takes a long time to run
+load("stellar-flares/Data/gprModel.RData")
+gprModel <- gpr_model
+
+# Predict flux values using the GPR model
+gprPred <- predict(gprModel, newdata = s1)
+
+# Calculate residuals 
+gprResiduals <- s1$pdcsap_flux_imputed - gprPred
+
+# Define an anomaly threshold
+threshold <- mean(gprResiduals, na.rm = TRUE) + 3 * sd(gprResiduals, na.rm = TRUE)
+
+# Flag anomalies based on the residuals
+s1$gpr_anomalies <- ifelse(gprResiduals > threshold, "Flare", "Normal")
+
+# Create a data frame for plotting
+plotData <- data.frame(time = s1$time, flux = s1$pdcsap_flux_imputed, flare = s1$gpr_anomalies)
+
+# Visualize anomalies detected by GPR
+ggplot(plotData, aes(x = time, y = flux)) +
+  geom_point(aes(color = flare), size = 1) +
+  scale_color_manual(values = c("Normal" = "black", "Flare" = "red")) +
+  labs(title = "Gaussian Process Regression Anomalies",
+       x = "Time", y = "PDCSAP Flux")
+
+```
+
+# Step 3: Fit One-Class Support Vector Machine
+
+```{r}
+# Fit the One-Class SVM model with decision function enabled
+ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
+                  kernel = "radial", scale = TRUE, 
+                  gamma = 0.01, decision.values = TRUE)
+
+
+# Get the decision function scores (distance from the boundary)
+decisionScores <- ocsvmModel$decision.values
+
+# Define a manual threshold for anomalies
+threshold <- -quantile(decisionScores, 0.95) 
+
+# Flag anomalies based on the threshold
+s1$ocsvm_anomalies <- ifelse(decisionScores < threshold, "Flare", "Normal")
+
+# Create a data frame for plotting
+plotData <- data.frame(time = s1$time, flux = s1$pdcsap_flux_imputed, 
+                       flare = s1$ocsvm_anomalies)
+colnames(plotData) <- c("time", "flux", "flare")
+
+# Visualize anomalies detected by OCSVM with manual threshold
+ggplot(plotData, aes(x = time, y = flux)) +
+  geom_point(aes(color = flare), size = 1) +
+  scale_color_manual(values = c("Normal" = "black", "Flare" = "red")) +
+  labs(title = "One-Class SVM Anomalies", 
+       x = "Time", y = "PDCSAP Flux") 
+```
+
+# Step 4: Create SARIMA Simulation
+
+Below is the function to simulate brightness
+```{r}
+# @param starData: A data frame containing the time series data of a star, 
+# including flux values (with missing values imputed).
+# @param starName: A string representing the name of the star (used in the plot title).
+# @return A data frame containing the simulated light curve with injected 
+# synthetic flares, including the time, simulated flux, and flare labels.
+
+simulate_light_curve_pareto <- function(star_data, star_name) {
+  
+  # Fit the SARIMA model (or another model if needed)
+  fit_sarima <- auto.arima(star_data$pdcsap_flux_imputed, seasonal = TRUE)
+  
+  # Simulate the light curve using the SARIMA model
+  simulated_data <- simulate(fit_sarima, nsim = 
+                               length(star_data$pdcsap_flux_imputed))
+  
+  # Initialize simulated dataframe
+  simulated_df <- data.frame(
+    time = 1:length(star_data$pdcsap_flux_imputed),
+    pdcsap_flux_imputed = simulated_data,
+    flare_label = rep(0, length(star_data$pdcsap_flux_imputed))  # Initially no flares
+  )
+  
+  # Inject 10 synthetic flares using a Pareto distribution
+  flare_indices <- sample(1:length(star_data$pdcsap_flux_imputed), 
+                          size = 10, replace = FALSE)
+  
+  for (index in flare_indices) {
+    # Use the Pareto distribution to determine flare amplitude
+    flare_amplitude <- rpareto(1, a = 1, b = 25)  # Using parameters for large flares
+    simulated_df$pdcsap_flux_imputed[index] <- simulated_df$pdcsap_flux_imputed[index] + 
+      flare_amplitude
+    simulated_df$flare_label[index] <- 1  # Mark flare
+  }
+  
+  # Plot the actual data and simulated data
+  p <- ggplot() +
+    geom_line(data = star_data, aes(x = 1:length(star_data$pdcsap_flux_imputed), 
+                                    y = star_data$pdcsap_flux_imputed), 
+              color = "blue", alpha = 0.7) +  # Actual data
+    geom_line(data = simulated_df, aes(x = time, y = pdcsap_flux_imputed), 
+              color = "green", alpha = 0.7) +  # Simulated data
+    geom_point(data = simulated_df[simulated_df$flare_label == 1, ], 
+               aes(x = time, y = pdcsap_flux_imputed), color = "red") +  # Flares
+    labs(title = paste("Actual vs. Simulated Light Curve for", star_name),
+         x = "Time", y = "PDCSAP Flux") +
+    theme_minimal() +
+    scale_color_manual(values = c("blue", "green"))
+  
+  print(p)
+  
+  return(simulated_df)
+}
+```
+
+I will use the same simulations as in my report.
+```{r}
+load("../Simulations/simulatedS1.RData")
+load("../Simulations/simulatedS3.RData")
+```
+
+# Step 5: Score and Visualize GPR model on TIC 031381302 and TIC 0131799991
+
+## Scoring GPR Trained on TIC 031381302 on TIC 031381302
+```{r}
+# Predict using the trained GPR model on the simulated data
+gprPred <- predict(gprModel, newdata = data.frame(time = simulatedS1$time))
+
+# Calculate residuals 
+gprResiduals <- simulatedS1$pdcsap_flux_imputed - gprPred
+
+# Define an anomaly threshold (residuals greater than 3 sd from the mean)
+thresholdGpr <- mean(gprResiduals, na.rm = TRUE) + 3 * sd(gprResiduals, 
+                                                          na.rm = TRUE)
+
+# Flag anomalies based on the residuals
+simulatedS1$predicted_flare_gpr <- ifelse(gprResiduals > thresholdGpr, 1, 0)  
+
+# Calculate TN, TP, FP, FN for GPR
+predictedFlaresGpr <- sum(simulatedS1$predicted_flare_gpr==1)
+truePositivesGpr <- sum(simulatedS1$predicted_flare_gpr == 1 & 
+                          simulatedS1$flare_label == 1)
+falseNegativesGpr <- sum(simulatedS1$predicted_flare_gpr == 0 & 
+                           simulatedS1$flare_label == 1)
+falsePositivesGpr <- sum(simulatedS1$predicted_flare_gpr == 1 & 
+                           simulatedS1$flare_label == 0)
+trueNegativesGpr <- sum(simulatedS1$predicted_flare_gpr == 0 & 
+                          simulatedS1$flare_label == 0)
+
+# Calculate FPR, Sensitivity and Accuracy for GPR
+falsePostiveRateGpr <- falsePositivesGpr / (falsePositivesGpr + trueNegativesGpr)
+sensitivityGpr <- truePositivesGpr / (truePositivesGpr + falseNegativesGpr)
+accuracyGpr <- mean(simulatedS1$predicted_flare_gpr == simulatedS1$flare_label)
+
+# Print the results
+cat("GPR Flares Predicted:", predictedFlaresGpr, "\n")
+cat("GPR Sensitivity (True Positive Rate): ", sensitivityGpr, "\n")
+cat("GPR Specificity: ", 1-falsePostiveRateGpr, "\n")
+cat("GPR Predictive Accuracy: ", accuracyGpr, "\n")
+```
+
+## Scoring GPR Trained on TIC 031381302 on TIC 0131799991
+```{r}
+gprPred <- predict(gprModel, newdata = data.frame(time = simulatedS3$time))
+
+# Calculate residuals 
+gprResiduals <- simulatedS3$pdcsap_flux_imputed - gprPred
+
+# Define an anomaly threshold (residuals greater than 3 sd from the mean)
+thresholdGpr <- mean(gprResiduals, na.rm = TRUE) + 3 * sd(gprResiduals, 
+                                                          na.rm = TRUE)
+
+# Flag anomalies based on the residuals
+simulatedS3$predicted_flare_gpr <- ifelse(gprResiduals > thresholdGpr, 1, 0)  
+
+# Calculate TN, TP, FP, FN for GPR
+predictedFlaresGpr <- sum(simulatedS3$predicted_flare_gpr==1)
+truePositivesGpr <- sum(simulatedS3$predicted_flare_gpr == 1 & 
+                          simulatedS3$flare_label == 1)
+falseNegativesGpr <- sum(simulatedS3$predicted_flare_gpr == 0 & 
+                           simulatedS3$flare_label == 1)
+falsePositivesGpr <- sum(simulatedS3$predicted_flare_gpr == 1 & 
+                           simulatedS3$flare_label == 0)
+trueNegativesGpr <- sum(simulatedS3$predicted_flare_gpr == 0 & 
+                         simulatedS3$flare_label == 0)
+
+# Calculate FPR, Sensitivity and Accuracy for GPR
+falsePostiveRateGpr <- falsePositivesGpr / (falsePositivesGpr + trueNegativesGpr)
+sensitivityGpr <- truePositivesGpr / (truePositivesGpr + falseNegativesGpr)
+accuracyGpr <- mean(simulatedS3$predicted_flare_gpr == simulatedS3$flare_label)
+
+# Print the results
+cat("GPR Flares Predicted:", predictedFlaresGpr, "\n")
+cat("GPR Sensitivity (True Positive Rate): ", sensitivityGpr, "\n")
+cat("GPR Specificity: ", 1-falsePostiveRateGpr, "\n")
+cat("GPR Predictive Accuracy: ", accuracyGpr, "\n")
+
+```
+
+## Visualize GPR Flare Detection
+```{r}
+ggplot(simulatedS3, aes(x = time, y = pdcsap_flux_imputed)) + 
+  geom_line(color = "green") +
+  geom_point(data = subset(simulatedS3, predicted_flare_gpr == 1),
+             aes(x = time, y = pdcsap_flux_imputed),
+             color = "red", size = 2) +
+  labs(title = "Flare Detection using GPR on TIC 0131799991 Simulation",
+       x = "Time", y = "PDCSAP_FLUX") + 
+         theme_minimal()
+
+```
+
+# Step 6: Score and visualize OCSVM model on TIC 031381302 and TIC 0131799991
+
+## Scoring OCSVM Trained on TIC 031381302 on TIC 031381302
+```{r}
+ocsvmModel <- svm(s1$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
+                  kernel = "radial", scale = TRUE, 
+                  gamma = 0.01, decision.values = TRUE)
+
+# Predict using the trained OCSVM model on the simulated data for Star 1
+ocsvmPred <- predict(ocsvmModel, 
+                     newdata = data.frame(simulatedS1$pdcsap_flux_imputed))
+
+# Define threshold
+simulatedS1$predicted_flare_ocsvm <- ifelse(ocsvmPred, 0, 1)
+threshold <- quantile(simulatedS1$pdcsap_flux_imputed, 0.95)  
+simulatedS1$predicted_flare_ocsvm <- ifelse(simulatedS1$predicted_flare_ocsvm == 1 & 
+                                        simulatedS1$pdcsap_flux_imputed > threshold, 1, 0)
+
+# Calculate TN, TP, FN, FP OCSVM
+flaresPredictedOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 1)
+truePositivesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 1 & 
+                            simulatedS1$flare_label == 1)
+falseNegativesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 0 & 
+                             simulatedS1$flare_label == 1)
+falsePositivesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 1 & 
+                             simulatedS1$flare_label == 0)
+trueNegativesOcsvm <- sum(simulatedS1$predicted_flare_ocsvm == 0 & 
+                          simulatedS1$flare_label == 0)
+
+# Calculate FPR, Sensitivity and Accuracy for OCSVM
+falsePostiveRateOcsvm <- falsePositivesOcsvm / (falsePositivesOcsvm + trueNegativesOcsvm)
+sensitivityOcsvm <- truePositivesOcsvm / (truePositivesOcsvm + falseNegativesOcsvm)
+accuracyOcsvm <- mean(simulatedS1$predicted_flare_ocsvm == simulatedS1$flare_label)
+
+# Print the results
+cat("OCSVM Flares Predicted:", flaresPredictedOcsvm, "\n")
+cat("OCSVM Sensitivity (True Positive Rate): ", sensitivityOcsvm, "\n")
+cat("OCSVM Specificity: ", 1-falsePostiveRateOcsvm, "\n")
+cat("OCSVM Predictive Accuracy: ", accuracyOcsvm, "\n")
+```
+
+## Scoring OCSVM Trained on TIC 0131799991 on TIC 0131799991
+```{r}
+ocsvmModel <- svm(s3$pdcsap_flux_imputed, type = "one-classification", nu = 0.01,
+                 kernel = "radial", scale = TRUE, 
+                  gamma = 0.01, decision.values = TRUE)
+
+# Predict using the trained OCSVM model on the simulated data for Star 3
+ocsvmPred <- predict(ocsvmModel, 
+                     newdata = data.frame(simulatedS3$pdcsap_flux_imputed))
+
+simulatedS3$predicted_flare_ocsvm <- ifelse(ocsvmPred, 0, 1)
+
+threshold <- quantile(simulatedS3$pdcsap_flux_imputed, 0.95)  
+
+simulatedS3$predicted_flare_ocsvm <- ifelse(simulatedS3$predicted_flare_ocsvm == 1 & 
+                                              simulatedS3$pdcsap_flux_imputed > threshold, 1, 0)
+
+# Calculate TN, TP, FP, FN for OCSVM
+flaresPredictedOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 1)
+truePositivesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 1 & 
+                            simulatedS3$flare_label == 1)
+falseNegativesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 0 & 
+                             simulatedS3$flare_label == 1)
+falsePositivesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 1 & 
+                             simulatedS3$flare_label == 0)
+trueNegativesOcsvm <- sum(simulatedS3$predicted_flare_ocsvm == 0 & 
+                            simulatedS3$flare_label == 0)
+
+# Calculate FPR, Sensitivity and Accuracy for GPR
+falsePostiveRateOcsvm <- falsePositivesOcsvm / (falsePositivesOcsvm + trueNegativesOcsvm)
+sensitivityOcsvm <- truePositivesOcsvm / (truePositivesOcsvm + falseNegativesOcsvm)
+accuracyOcsvm <- mean(simulatedS3$predicted_flare_ocsvm == simulatedS3$flare_label)
+
+# Print the results
+cat("OCSVM Flares Predicted:", flaresPredictedOcsvm, "\n")
+cat("OCSVM Sensitivity (True Positive Rate): ", sensitivityOcsvm, "\n")
+cat("OCSVM Specificity: ", 1-falsePostiveRateOcsvm, "\n")
+cat("OCSVM Predictive Accuracy: ", accuracyOcsvm, "\n")
+```
+
+## Visualize OCSVM Flare Detection
+```{r}
+# Visualize flux over time with anomalies highlighted
+ggplot(simulatedS3, aes(x = time, y = pdcsap_flux_imputed)) + 
+  geom_line(color = "green") +
+  geom_point(data = subset(simulatedS3, predicted_flare_ocsvm == 1),
+             aes(x = time, y = pdcsap_flux_imputed),
+             color = "red", size = 2) +
+  labs(title = "Flare Detection using One-Class SVM on TIC 0131799991 Simulation",
+       x = "Time", y = "PDCSAP_FLUX") +
+  theme_minimal()
+
+```
+
